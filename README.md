@@ -1,66 +1,121 @@
+README: Sales Data Analysis and MySQL Operations
 
-Project: E-Commerce Sales Data Integration and Analysis
-Description:
-This Python script connects to a MySQL database, creates necessary tables, inserts data from a CSV file, and executes various SQL queries to manage and analyze e-commerce sales data. It showcases proficiency in SQL by implementing key queries and handling data transformations like splitting date and time, and updating the database.
+Overview
+This Python script connects to a MySQL database named ecommerce_sales, loads sales data from a CSV file, and performs various SQL operations on the data, including creating and populating tables, updating data, and querying the database. The script demonstrates proficiency in SQL and Python by utilizing a variety of SQL features such as JOIN, GROUP BY, Temporary Tables, and Common Table Expressions (CTEs).
 
-Database Tables:
-Orders: Contains details of customer orders.
+Features
+Create and Insert Data: Automatically creates and populates Orders, Products, and OrderDetails tables using data from the CSV file.
+Date and Time Handling: Handles date and time extraction from a single timestamp column in the dataset and inserts it into two separate columns: order_date and order_time.
+SQL Queries: Demonstrates various SQL operations including data insertion, updates, joins, and ordering.
+Temporary Tables and CTEs: Includes examples of using a temporary table and a common table expression (CTE) to perform advanced queries.
+Table Descriptions
+Orders:
 
-Columns: order_id, order_date, city, purchase_address, order_time.
-Products: Contains information about products.
+order_id (INT, Primary Key)
+order_date (DATE)
+order_time (TIME)
+city (VARCHAR)
+purchase_address (VARCHAR)
+Products:
 
-Columns: product_id, product_category, product_name, price_each.
-OrderDetails: Contains details of each order.
+product_id (INT, AUTO_INCREMENT, Primary Key)
+product_category (VARCHAR)
+product_name (VARCHAR)
+price_each (DECIMAL)
+OrderDetails:
 
-Columns: order_id, product_id, quantity_ordered, sales.
-Features:
-CSV Parsing: Loads data from a CSV file into a Pandas DataFrame, processes date and time values, and prepares it for insertion into the MySQL database.
-Data Insertion: Inserts new data into Orders, Products, and OrderDetails tables.
-Data Update: Updates existing data in the Orders table to add time details.
-Key SQL Queries:
-Join Queries:
-Fetch details of orders, products, and sales using JOIN.
-Date and Time Operations:
-Insert and update date and time details from the CSV file into the database.
-Sales Analysis:
-Retrieve total sales, count of orders, and average sales by product category, city, and other criteria.
-Order Time Management:
-Split order date and time for detailed time analysis.
-SQL Proficiency Demonstrated:
-Create Table statements for the main tables.
-Insert and Update queries for data management.
-JOIN queries to combine data from multiple tables.
-Aggregate functions like SUM(), COUNT(), and AVG() for sales analysis.
-Group By and Order By clauses for data grouping and sorting.
-Handling ON DUPLICATE KEY UPDATE for efficient data updates.
-How to Use:
-Set Up the MySQL Database:
+order_id (INT, Foreign Key to Orders)
+product_id (INT, Foreign Key to Products)
+quantity_ordered (INT)
+sales (DECIMAL)
+SQL Queries in the Script
+1. Insert Data into Tables
+Data from the CSV is inserted into Orders, Products, and OrderDetails tables using basic INSERT statements with ON DUPLICATE KEY UPDATE to avoid duplicates.
+2. Date and Time Handling
+Dates and times are extracted from a datetime string, split into separate columns (order_date and order_time), and inserted into the Orders table.
+3. Advanced Queries
+Total Sales by Product: Displays the total sales amount for each product.
 
-Ensure MySQL is installed and running on your local machine.
-Update the connection credentials (host, user, password, database) in the script.
-Create an ecommerce_sales database in MySQL.
-Prepare the CSV File:
+sql
+Copy code
+SELECT product_name, SUM(sales) AS total_sales
+FROM OrderDetails
+JOIN Products ON OrderDetails.product_id = Products.product_id
+GROUP BY product_name;
+Total Sales by City: Shows the total sales for each city.
 
-Update the file path to your CSV file containing the sales data.
-Ensure the columns in the CSV match the script's data expectations (e.g., Order ID, Order Date, Product, etc.).
-Run the Script:
+sql
+Copy code
+SELECT city, SUM(sales) AS total_sales
+FROM Orders
+JOIN OrderDetails ON Orders.order_id = OrderDetails.order_id
+GROUP BY city;
+Advanced SQL Techniques
+Common Table Expression (CTE)
+Find the Most Popular Products:
+This query uses a CTE to calculate the total quantity ordered for each product and then displays the top 5 most ordered products.
+python
+Copy code
+cursor.execute(
+    """
+    WITH ProductSales AS (
+        SELECT product_name, SUM(quantity_ordered) AS total_quantity
+        FROM OrderDetails
+        JOIN Products ON OrderDetails.product_id = Products.product_id
+        GROUP BY product_name
+    )
+    SELECT product_name, total_quantity
+    FROM ProductSales
+    ORDER BY total_quantity DESC
+    LIMIT 5;
+    """
+)
+result = cursor.fetchall()
+print("CTE Example - Top 5 Most Ordered Products:")
+for row in result:
+    print(row)
+Temporary Table
+Find Top 5 Cities by Total Sales:
+This query creates a temporary table that calculates total sales by city, then retrieves the top 5 cities with the highest total sales.
+python
+Copy code
+cursor.execute(
+    """
+    CREATE TEMPORARY TABLE TempCitySales AS
+    SELECT city, SUM(sales) AS total_sales
+    FROM Orders
+    JOIN OrderDetails ON Orders.order_id = OrderDetails.order_id
+    GROUP BY city;
+    """
+)
+db.commit()
 
-The script will automatically create the tables (if not already present) and insert data into the database.
-Run SQL Queries:
+cursor.execute(
+    """
+    SELECT city, total_sales
+    FROM TempCitySales
+    ORDER BY total_sales DESC
+    LIMIT 5;
+    """
+)
+result = cursor.fetchall()
+print("Temporary Table Example - Top 5 Cities by Total Sales:")
+for row in result:
+    print(row)
 
-The script executes various SQL queries to demonstrate proficiency, including JOIN, GROUP BY, ORDER BY, and SUM() functions.
-Modify the queries as needed to suit your specific analysis or project requirements.
-Requirements:
-Python Libraries:
-mysql.connector for MySQL connection.
-pandas for data handling and CSV reading.
-MySQL Database:
-MySQL server with an ecommerce_sales database.
-Properly configured MySQL user credentials.
-Additional Features:
-Dynamic date and time handling using Python’s datetime module and Pandas.
-Robust error handling for MySQL queries and data transformations.
-Future Enhancements:
-Expand the set of queries to include more complex analysis like customer segmentation, sales forecasting, or product recommendation.
-Integrate data visualizations using libraries like Matplotlib or Seaborn.
-Automate CSV file uploads for regular data updates.
+# Clean up: Drop the temporary table
+cursor.execute("DROP TEMPORARY TABLE IF EXISTS TempCitySales;")
+Requirements
+Python 3.x
+MySQL Database
+pandas: For reading CSV and data manipulation
+mysql-connector-python: For connecting Python to MySQL
+You can install the required packages using:
+
+bash
+Copy code
+pip install pandas mysql-connector-python
+Instructions
+Database Setup: Ensure you have a MySQL server running with a database named ecommerce_sales.
+CSV File: The script expects a CSV file with columns such as Order ID, Order Date, City, Purchase Address, Product, Quantity Ordered, and Sales. Update the file path in the script to match your local CSV file path.
+Run the Script: Execute the Python script to load data into the MySQL database, run the queries, and display results.
