@@ -11,7 +11,9 @@ cursor = db.cursor()
 print("MySql database connection successful!")
 
 # Load the CSV file into a DataFrame
-data = pd.read_csv(r"C:\Users\Bibek Paudel\Desktop\Data Science\Sales Data Analysis.csv")
+data = pd.read_csv(
+    r"C:\Users\Bibek Paudel\Desktop\Data Science\Sales Data Analysis.csv"
+)
 
 # Convert 'Order Date' to datetime
 data["Order DateTime"] = pd.to_datetime(data["Order Date"], format="%d-%m-%Y %H:%M")
@@ -273,6 +275,54 @@ result = cursor.fetchall()
 print("\nCities with the Most Orders:")
 for row in result:
     print(row)
+
+# Query 13: Example of using a CTE to calculate average sales per product category
+cursor.execute(
+    """
+    WITH AvgSalesPerCategory AS (
+        SELECT product_category, AVG(sales) AS avg_sales
+        FROM OrderDetails
+        JOIN Products ON OrderDetails.product_id = Products.product_id
+        GROUP BY product_category
+    )
+    SELECT product_category, avg_sales
+    FROM AvgSalesPerCategory
+    ORDER BY avg_sales DESC;
+    """
+)
+result = cursor.fetchall()
+print("CTE Example - Average Sales per Product Category:")
+for row in result:
+    print(row)
+
+    # Example of using a Temporary Table to calculate total sales by city
+cursor.execute(
+    """
+    CREATE TEMPORARY TABLE TempCitySales AS
+    SELECT city, SUM(sales) AS total_sales
+    FROM Orders
+    JOIN OrderDetails ON Orders.order_id = OrderDetails.order_id
+    GROUP BY city;
+    """
+)
+db.commit()
+
+cursor.execute(
+    """
+    SELECT city, total_sales
+    FROM TempCitySales
+    ORDER BY total_sales DESC
+    LIMIT 5;
+    """
+)
+result = cursor.fetchall()
+print("Temporary Table Example - Top 5 Cities by Total Sales:")
+for row in result:
+    print(row)
+
+# Clean up: Drop the temporary table (optional as it gets dropped automatically when session ends)
+cursor.execute("DROP TEMPORARY TABLE IF EXISTS TempCitySales;")
+
 
 # Close the connection
 cursor.close()
